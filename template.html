@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一块电池还能撑几年 · 锂电池充电习惯与到期日估算</title>
+<meta name="description" content="填一次手机里的电池健康度，算出照现在的用法还能撑几年到 80%，以及把每次充电挪到中段能拿回多久。全部由你填数字，页面不联网、不内置任何品牌参数或循环次数。">
+<style>
+  :root{
+    --bg:#f4f6f7; --card:#ffffff; --paper:#fbfcfc; --ink:#141a1c; --ink2:#4e5a5e; --ink3:#7d8a8e;
+    --line:#e3e8ea; --line2:#c9d2d5; --brand:#16657a; --brand2:#e6f2f5;
+    --rail:#f0f4f5; --warn:#8a5a00; --warnbg:#fdf5e6; --bad:#a3251b; --badbg:#fcebe9; --good:#146b46; --goodbg:#e8f5ee;
+    --radius:12px; --w:1060px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:15px/1.7 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:var(--w);margin:0 auto;padding:16px 14px 96px}
+  header.top{padding:2px 2px 4px}
+  h1{margin:0 0 6px;font-size:25px;line-height:1.35;letter-spacing:.2px}
+  .lede{margin:0;color:var(--ink2);font-size:14.5px}
+  .badges{margin-top:9px;display:flex;flex-wrap:wrap;gap:7px}
+  .badge{font-size:12px;padding:3px 9px;border-radius:999px;background:#fff;border:1px solid var(--line2);color:var(--ink2);max-width:100%;overflow-wrap:anywhere}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin:12px 0 0;box-shadow:0 1px 2px rgba(20,26,28,.04)}
+  .card > h2{margin:0 0 4px;font-size:17px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .card > h2 .step{font-size:12px;font-weight:700;color:#fff;background:var(--brand);border-radius:999px;padding:2px 9px;white-space:nowrap}
+  .card > .hint{margin:0 0 11px;color:var(--ink2);font-size:13.5px}
+  h3.sec{margin:15px 0 6px;font-size:13.5px;color:var(--ink2);letter-spacing:.3px;border-bottom:1px dashed var(--line);padding-bottom:4px}
+  .field{margin-bottom:10px}
+  .field label{display:block;font-size:13px;color:var(--ink2);margin-bottom:4px}
+  .field label .sub{color:var(--ink3);font-size:12px}
+  input[type=text],select{width:100%;padding:9px 11px;border:1px solid var(--line2);border-radius:9px;font-size:14.5px;background:#fff;color:var(--ink);font-variant-numeric:tabular-nums}
+  input[type=text]:focus,select:focus{outline:2px solid #bfe0e8;border-color:var(--brand)}
+  input.bad,select.bad{border-color:var(--bad);background:var(--badbg)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .grid2 > *{min-width:0}
+  @media(max-width:560px){ .grid2{grid-template-columns:1fr} }
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{cursor:pointer;font:inherit;font-size:13.5px;padding:6px 12px;border-radius:999px;border:1px solid var(--line2);background:#fff;color:var(--ink2)}
+  .chip[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+  .btn{cursor:pointer;font:inherit;font-size:13.5px;padding:8px 13px;border-radius:9px;border:1px solid var(--line2);background:#fff;color:var(--ink)}
+  .btn:hover{border-color:var(--brand);color:var(--brand)}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600}
+  .btnrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .hidden{display:none !important}
+  /* ── 结论票 ── */
+  .ticket{border:1px solid var(--line2);border-radius:12px;background:var(--paper);padding:12px 14px;position:relative;overflow:hidden}
+  .ticket:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--brand)}
+  .ticket .k{font-size:11.5px;letter-spacing:2px;color:var(--ink3);text-transform:uppercase}
+  .ticket .vt{font-size:19px;font-weight:700;margin:5px 0 3px;line-height:1.45}
+  .ticket .vw{font-size:13.5px;color:var(--ink2)}
+  .ticket.ok:before{background:var(--good)} .ticket.warn:before{background:var(--warn)} .ticket.bad:before{background:var(--bad)}
+  .ticket.ok .vt{color:var(--good)} .ticket.warn .vt{color:var(--warn)} .ticket.bad .vt{color:var(--bad)}
+  /* ── 读数 ── */
+  .readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px;margin-top:11px}
+  .readout > *{min-width:0}
+  @media(max-width:430px){ .readout{grid-template-columns:repeat(auto-fit,minmax(94px,1fr));gap:7px}
+    .ro .v{font-size:15px} .ro .l,.ro .s{font-size:10.5px} }
+  .ro{border:1px solid var(--line);border-radius:10px;background:#fff;padding:8px 10px}
+  .ro .l{font-size:11.5px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ro .v{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:1px;overflow-wrap:anywhere}
+  .ro .s{font-size:11.5px;color:var(--ink3);line-height:1.45;overflow-wrap:anywhere}
+  /* ── 周线图 ── */
+  .chartbox{border:1px solid var(--line2);border-radius:10px;background:linear-gradient(#fbfdfd,#f2f6f7);padding:8px;overflow:hidden;max-width:100%}
+  .chartbox svg{display:block;width:100%;height:auto}
+  .legend{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:12.5px;color:var(--ink2)}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:middle}
+  /* ── 里程表 ── */
+  .mile{width:100%;border-collapse:collapse;font-size:13.5px;table-layout:fixed}
+  .mile col.c1{width:22%} .mile col.c2{width:19%} .mile col.c3{width:22%} .mile col.c4{width:37%}
+  .mile th{text-align:left;font-size:12px;color:var(--ink3);font-weight:600;border-bottom:1px solid var(--line2);padding:5px 6px}
+  .mile td{padding:6px;border-bottom:1px dotted var(--line);vertical-align:top;overflow-wrap:anywhere}
+  .mile td.h{font-weight:700;font-variant-numeric:tabular-nums}
+  .mile td.d{font-variant-numeric:tabular-nums;font-weight:600;color:var(--brand)}
+  .mile td.n{color:var(--ink3);font-size:12.5px}
+  .mile tr:last-child td{border-bottom:0}
+  @media(max-width:640px){
+    .mile{table-layout:auto}
+    .mile col{width:auto}
+    .mile thead{display:none}
+    .mile tr{display:block;border:1px solid var(--line);border-radius:9px;margin-bottom:7px;padding:6px 8px;background:#fff}
+    .mile td{display:block;width:auto;white-space:normal;border:0;padding:1px 0}
+    .mile td.h:before{content:"健康度 ";color:var(--ink3);font-weight:400}
+    .mile td.d:before{content:"预计在 ";color:var(--ink3);font-weight:400}
+    .mile td.n:before{content:"说明：";color:var(--ink3)}
+  }
+  /* ── 策略对照 ── */
+  .strat{display:grid;gap:9px}
+  .sc{border:1px solid var(--line);border-radius:10px;background:#fff;padding:10px 11px}
+  .sc.on{border-color:var(--brand);background:var(--brand2)}
+  .sc .t{font-weight:700;font-size:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+  .sc .t .tag{font-size:11.5px;font-weight:600;color:#fff;background:var(--ink3);border-radius:999px;padding:1px 8px}
+  .sc.on .t .tag{background:var(--brand)}
+  .sc .g{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:6px;margin-top:7px}
+  .sc .g > div{min-width:0}
+  .sc .g .l{font-size:11px;color:var(--ink3)}
+  .sc .g .v{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .bar{height:8px;border-radius:999px;background:#eef2f3;position:relative;margin-top:7px;overflow:hidden}
+  .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:var(--brand)}
+  .bar.bad i{background:var(--bad)} .bar.good i{background:var(--good)}
+  /* ── 建议 ── */
+  .adv{border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:9px;background:#fff;padding:9px 11px;margin-top:8px}
+  .adv .t{font-weight:700;font-size:14px}
+  .adv .b{font-size:13px;color:var(--ink2)}
+  /* ── 自检 ── */
+  .chk{font-size:12.5px;border-bottom:1px dotted var(--line);padding:3px 0;display:flex;gap:7px;align-items:baseline}
+  .chk .m{flex:0 0 42px;font-weight:700}
+  .chk.pass .m{color:var(--good)} .chk.fail .m{color:var(--bad)}
+  .chk .t{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+  .err{background:var(--badbg);border:1px solid #e5b6b1;border-radius:9px;padding:8px 10px;font-size:13.5px;color:#7d1c14;margin-bottom:9px}
+  .err ul{margin:4px 0 0 18px;padding:0}
+  .err.hidden{display:none !important}
+  .sens{width:100%;border-collapse:collapse;font-size:12.5px;table-layout:fixed}
+  .sens col.c1{width:28%} .sens col.c2{width:16%} .sens col.c3{width:14%} .sens col.c4{width:14%} .sens col.c5{width:28%}
+  .sens th{text-align:left;color:var(--ink3);font-weight:600;border-bottom:1px solid var(--line2);padding:4px 5px;font-size:11.5px}
+  .sens td{padding:4px 5px;border-bottom:1px dotted var(--line);font-variant-numeric:tabular-nums;overflow-wrap:anywhere;vertical-align:top}
+  @media(max-width:640px){
+    .sens{table-layout:auto}
+    .sens col{width:auto}
+    .sens thead{display:none}
+    .sens tr{display:block;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;padding:5px 8px}
+    .sens td{display:block;width:auto;border:0;padding:1px 0}
+    .sens td.c1{font-weight:700}
+  }
+  .footbar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.96);border-top:1px solid var(--line2);backdrop-filter:blur(6px);z-index:20}
+  /* 窄屏：固定底栏会折成三行、盖住内容，索性收起——底栏那四个数上面每张卡里都有 */
+  @media(max-width:520px){ .footbar{display:none} .wrap{padding-bottom:24px} }
+  .footbar .in{max-width:var(--w);margin:0 auto;padding:8px 14px;display:flex;gap:10px 14px;flex-wrap:wrap;align-items:center;font-size:13px}
+  .footbar b{font-variant-numeric:tabular-nums}
+  .notes{font-size:12.5px;color:var(--ink3);margin:0;padding-left:18px}
+  .notes li{margin:3px 0}
+  .kv{font-size:12.5px;color:var(--ink2);margin:0;padding-left:18px}
+  .kv li{margin:2px 0;overflow-wrap:anywhere}
+  .spin{color:var(--ink3);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>一块电池还能撑几年</h1>
+    <p class="lede">填一次系统里的电池健康度，算出照现在的用法还能撑几年跌到 80%；以及把每次充电挪到中段，能把这笔时间拿回多少。</p>
+    <div class="badges">
+      <span class="badge">不联网 · 不查行情</span>
+      <span class="badge">不内置任何品牌参数或循环次数</span>
+      <span class="badge">数字全部由你填，默认值是虚构示例</span>
+      <span class="badge">可导出 CSV / MD / PNG / JSON</span>
+    </div>
+  </header>
+
+  <section class="card" id="sec-verdict">
+    <h2>结论 <span class="step">到期日</span> <span class="badge" id="v-scene">—</span></h2>
+    <div class="ticket" id="ticket">
+      <div class="k">照现在这样用</div>
+      <div class="vt" id="v-title">—</div>
+      <div class="vw" id="v-why">—</div>
+    </div>
+    <div class="readout" id="kpis" style="margin-top:11px"></div>
+  </section>
+
+  <section class="card err hidden" id="sec-err">
+    <div id="err-body"></div>
+  </section>
+
+  <section class="card" id="sec-chart">
+    <h2>还要走多久 <span class="step">周线图</span></h2>
+    <p class="hint" id="chart-hint">横轴是时间、纵轴是电池健康度；图上每条线是一种充电窗口的走法，终点就是它到 80% 的那天。虚线以下是「该换了」的区域。</p>
+    <div class="chartbox"><svg id="chart" viewBox="0 0 1000 320" role="img" aria-label="电池健康度随时间下降的周线图"></svg></div>
+    <div class="legend" id="legend"></div>
+    <h3 class="sec">里程表</h3>
+    <table class="mile" id="mile">
+      <colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"></colgroup>
+      <thead><tr><th>健康度</th><th>预计到达</th><th>还要多久</th><th>说明</th></tr></thead>
+      <tbody id="mile-body"></tbody>
+    </table>
+  </section>
+
+  <section class="card" id="sec-strat">
+    <h2>四种充法并排 <span class="step">谁更省</span></h2>
+    <p class="hint" id="strat-hint">一次充电跨过的电量由「每天用掉多少 ÷ 每天充几次」决定，不由充电器决定。所以省不省，看的是这段电量落在电池的哪一块。</p>
+    <div class="strat" id="strat"></div>
+  </section>
+
+  <section class="card" id="sec-advice">
+    <h2>下一步能改什么</h2>
+    <p class="hint" id="advice-hint">下面每个按钮都会真的写回上面的输入并立刻重算。</p>
+    <div id="advice-body"></div>
+  </section>
+
+  <section class="card" id="sec-inputs">
+    <h2>把你的数字填进来</h2>
+    <p class="hint">默认值是虚构示例，不对应任何真实设备、品牌或用户。系统里能查到的两个数（电池健康度、大概用了多久）填准确了，结论才准。</p>
+    <div class="grid2">
+      <div class="field">
+        <label for="f-healthNowPct">系统里显示的电池健康度 <span class="sub">%</span></label>
+        <input type="text" inputmode="decimal" id="f-healthNowPct" data-k="healthNowPct" value="">
+      </div>
+      <div class="field">
+        <label for="f-usedYears">这台用了多久 <span class="sub">年（1 年 6 个月 = 1.5）</span></label>
+        <input type="text" inputmode="decimal" id="f-usedYears" data-k="usedYears" value="">
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label for="f-screenHoursPerDay">每天亮屏多久 <span class="sub">小时 / 天</span></label>
+        <input type="text" inputmode="decimal" id="f-screenHoursPerDay" data-k="screenHoursPerDay" value="">
+      </div>
+      <div class="field">
+        <label for="f-drainPctPerHour">每小时大概用掉多少电 <span class="sub">% / 小时（你自己的经验值）</span></label>
+        <input type="text" inputmode="decimal" id="f-drainPctPerHour" data-k="drainPctPerHour" value="">
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label for="f-chargesPerDay">每天大概充几次 <span class="sub">次 / 天</span></label>
+        <input type="text" inputmode="decimal" id="f-chargesPerDay" data-k="chargesPerDay" value="">
+      </div>
+      <div class="field">
+        <label for="f-chargeFloorPct">平时最低会放到多少 <span class="sub">%</span></label>
+        <input type="text" inputmode="decimal" id="f-chargeFloorPct" data-k="chargeFloorPct" value="">
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label for="f-topCapPct">你愿意充到的上限 <span class="sub">%（设 80 表示充到 80 就拔）</span></label>
+        <input type="text" inputmode="decimal" id="f-topCapPct" data-k="topCapPct" value="">
+      </div>
+      <div class="field">
+        <label for="f-fastSharePct">其中快充占多少 <span class="sub">%</span></label>
+        <input type="text" inputmode="decimal" id="f-fastSharePct" data-k="fastSharePct" value="">
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label for="f-capacityMah">电池标称容量 <span class="sub">mAh（只用来折算 mAh 与 Wh）</span></label>
+        <input type="text" inputmode="numeric" id="f-capacityMah" data-k="capacityMah" value="">
+      </div>
+      <div class="field">
+        <label for="f-label">这台的备注 <span class="sub">只影响导出文件名</span></label>
+        <input type="text" id="f-label" data-k="label" value="">
+      </div>
+    </div>
+    <div class="field">
+      <label>使用环境温度 <span class="sub">四档，按大部分时间选</span></label>
+      <div class="chips" id="chips-tempBand"></div>
+    </div>
+    <div class="btnrow">
+      <button type="button" class="btn primary" id="btn-calc">重算</button>
+      <button type="button" class="btn" id="btn-save">保存到本机</button>
+      <button type="button" class="btn" id="btn-reset">恢复默认</button>
+      <button type="button" class="btn" id="btn-export-json">导出 JSON 备份</button>
+      <button type="button" class="btn" id="btn-import-json">导入 JSON 备份</button>
+      <input type="file" id="file-import" accept=".json,application/json" class="hidden">
+    </div>
+    <h3 class="sec">内置场景 <span style="font-weight:400;color:var(--ink3)">一键套用（都是虚构示例）</span></h3>
+    <div class="chips" id="scenarios"></div>
+    <h3 class="sec">换一种充法会怎样 <span style="font-weight:400;color:var(--ink3)">逐行都是同一套算式</span></h3>
+    <p class="hint">「年损耗单元」是同一套算式在不同条件上的结果。<b>只有「每天充电次数」这几行做了归一</b>（把日耗电按同样倍数缩放，保证每次放电深度不变，见说明列）——
+      不归一就会出现「少充几次 = 少用一点电，所以更耐用」这种同义反复。</p>
+    <table class="sens" id="sens">
+      <colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"></colgroup>
+      <thead><tr><th>情形</th><th>年损耗单元</th><th>速率比</th><th>比基准晚</th><th>说明（是否已归一）</th></tr></thead>
+      <tbody id="sens-body"></tbody>
+    </table>
+  </section>
+
+  <section class="card" id="sec-selfcheck">
+    <h2>算式自检 <span class="badge" id="sc-count">—</span></h2>
+    <p class="hint">这是引擎自己验自己：每条都写明用了哪几个数、算出什么，和我们写测试时用的是同一套断言。</p>
+    <div id="sc-body"></div>
+  </section>
+
+  <section class="card" id="sec-model">
+    <h2>模型假设与边界 <span class="step">先看这里</span></h2>
+    <ul class="notes" id="notes"></ul>
+    <h3 class="sec">本次用到的常量</h3>
+    <ul class="kv" id="assumptions"></ul>
+    <h3 class="sec">本页不做的事</h3>
+    <ul class="notes">
+      <li>不判断你的电池<b>是不是已经坏了</b>（鼓包、突然掉电、虚电）—— 那要拆机或实测，本页只画渐进损耗。</li>
+      <li>不含车载动力电池：车用电池的循环定义、热管理与日历老化差别太大。</li>
+      <li>不预测个别电芯的质量问题与召回，也不给「该不该换机」的消费建议。</li>
+      <li>不引用任何品牌、型号、厂商宣传的循环次数当真实值 —— 那些要你自己填进去。</li>
+      <li>页面不联网，所有数字都由你输入或由本页的算式推出。</li>
+    </ul>
+  </section>
+
+</div>
+
+<div class="footbar">
+  <div class="in">
+    <span>照现在这样用：<b id="fb-years">—</b></span>
+    <span>年损耗单元：<b id="fb-wear">—</b></span>
+    <span>每天放掉：<b id="fb-drain">—</b></span>
+    <span>自检：<b id="fb-sc">—</b></span>
+  </div>
+</div>
+
+<script>/*CORE*/</script>
+<script>/*UI*/</script>
+</body>
+</html>
